@@ -240,7 +240,10 @@ async fn mw_headers(
     let content_type = content_type.and_then(|h|h.to_str().ok());
     let cache_duration = get_cache_duration(&app_state, content_type);
     if status.is_success() || status.is_redirection() {
-        if let Some(cache_duration) = cache_duration {
+        if cache_check.is_some() {
+            // Generated pages (markdown/index) must revalidate so new/changed files appear immediately
+            headers.insert(axum::http::header::CACHE_CONTROL, axum::http::HeaderValue::from_static("no-cache"));
+        } else if let Some(cache_duration) = cache_duration {
             let cache_control_string = format!("public, max-age={cache_duration}");
             if let Ok(value) = axum::http::HeaderValue::from_str(cache_control_string.as_str()) {
                 headers.insert(axum::http::header::CACHE_CONTROL, value);
